@@ -51,6 +51,20 @@ Start for web:
 npx expo start --web
 ```
 
+Build the web app for deployment:
+
+```bash
+npm run build:web
+```
+
+Deploy to Firebase Hosting:
+
+```bash
+npm install -g firebase-tools
+firebase login
+npm run deploy:firebase
+```
+
 ## Notes
 
 - If `.env` is missing, the app falls back to local demo data.
