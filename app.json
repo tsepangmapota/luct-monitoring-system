@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "LUCT Monitoring System",
+    "slug": "luct-monitoring-system",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "platforms": ["android", "ios", "web"],
+    "android": {
+      "package": "com.luct.monitoringsystem"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
