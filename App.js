@@ -308,15 +308,7 @@ export default function App() {
       <SafeAreaView style={styles.page}>
         <StatusBar barStyle="dark-content" />
         <ScrollView contentContainerStyle={styles.container}>
-          <View style={styles.hero}>
-            <Text style={styles.eyebrow}>BIMP2210 Assignment 2</Text>
-            <Text style={styles.heroTitle}>LUCT Monitoring System</Text>
-            <Text style={styles.heroText}>Multi-role mobile application for students, lecturers, principal lecturers, and program leaders.</Text>
-            <Text style={styles.modeText}>
-              Backend: {isFirebaseConfigured ? 'Firebase Authentication + Firestore' : 'Local demo mode'}
-            </Text>
-          </View>
-          <Section title={screen === 'login' ? 'Login' : 'Register'} subtitle={isFirebaseConfigured ? 'Your accounts are now stored in Firebase.' : 'Demo password for all sample accounts: 123456'}>
+          <Section title={screen === 'login' ? 'Login' : 'Register'} subtitle={screen === 'login' && !isFirebaseConfigured ? 'Demo password for all sample accounts: 123456' : ''}>
             {authMessage ? <Text style={styles.statusText}>{authMessage}</Text> : null}
             {screen === 'login' ? (
               <>
@@ -357,7 +349,6 @@ export default function App() {
             <Text style={styles.eyebrow}>Faculty Monitoring Dashboard</Text>
             <Text style={styles.heroTitle}>{user.name}</Text>
             <Text style={styles.heroText}>{roles[user.role]} access</Text>
-            <Text style={styles.modeText}>Connected to {isFirebaseConfigured ? 'Firebase' : 'local demo data'}</Text>
           </View>
           <Pressable style={styles.logoutButton} onPress={handleLogout}>
             <Text style={styles.logoutButtonText}>Logout</Text>
@@ -523,7 +514,6 @@ const styles = StyleSheet.create({
   eyebrow: { color: '#f4c95d', fontSize: 13, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 },
   heroTitle: { color: '#fff', fontSize: 29, fontWeight: '900' },
   heroText: { color: '#dbe6ef', fontSize: 15, lineHeight: 22, marginTop: 8 },
-  modeText: { color: '#f4c95d', fontSize: 13, marginTop: 8, fontWeight: '700' },
   section: { backgroundColor: '#fff', borderRadius: 24, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#e5ddd0' },
   sectionTitle: { fontSize: 21, fontWeight: '900', color: '#16324f' },
   sectionSubtitle: { marginTop: 6, marginBottom: 12, color: '#66768a', lineHeight: 20 },
