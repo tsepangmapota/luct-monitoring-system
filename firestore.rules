@@ -1,0 +1,194 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function userRole() {
+      return signedIn() && userDoc().exists() ? userDoc().data.role : null;
+    }
+
+    function isProgramLeader() {
+      return userRole() == 'program_leader';
+    }
+
+    function isPrincipalLecturer() {
+      return userRole() == 'principal_lecturer';
+    }
+
+    function isLecturer() {
+      return userRole() == 'lecturer';
+    }
+
+    function hasOnlyKeys(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
+
+    function validCourse() {
+      return hasOnlyKeys([
+        'assignedById',
+        'className',
+        'courseCode',
+        'courseName',
+        'createdAt',
+        'facultyName',
+        'lecturerName',
+        'principalLecturerName',
+        'registeredStudents',
+        'scheduledTime',
+        'stream',
+        'updatedAt',
+        'venue'
+      ]) &&
+      request.resource.data.courseName is string &&
+      request.resource.data.courseCode is string &&
+      request.resource.data.facultyName is string &&
+      request.resource.data.className is string &&
+      request.resource.data.lecturerName is string &&
+      request.resource.data.principalLecturerName is string &&
+      request.resource.data.registeredStudents is int &&
+      request.resource.data.registeredStudents >= 0 &&
+      request.resource.data.venue is string &&
+      request.resource.data.scheduledTime is string &&
+      request.resource.data.stream is string;
+    }
+
+    function validReport() {
+      return hasOnlyKeys([
+        'actualPresent',
+        'className',
+        'courseCode',
+        'courseName',
+        'createdAt',
+        'dateOfLecture',
+        'facultyName',
+        'feedback',
+        'learningOutcomes',
+        'lecturerId',
+        'lecturerName',
+        'recommendations',
+        'scheduledTime',
+        'topicTaught',
+        'totalRegistered',
+        'updatedAt',
+        'venue',
+        'weekOfReporting'
+      ]) &&
+      request.resource.data.lecturerId == request.auth.uid &&
+      request.resource.data.courseCode is string &&
+      request.resource.data.courseName is string &&
+      request.resource.data.facultyName is string &&
+      request.resource.data.className is string &&
+      request.resource.data.weekOfReporting is string &&
+      request.resource.data.dateOfLecture is string &&
+      request.resource.data.lecturerName is string &&
+      request.resource.data.actualPresent is string &&
+      request.resource.data.totalRegistered is string &&
+      request.resource.data.venue is string &&
+      request.resource.data.scheduledTime is string &&
+      request.resource.data.topicTaught is string &&
+      request.resource.data.learningOutcomes is string &&
+      request.resource.data.recommendations is string &&
+      request.resource.data.feedback is string;
+    }
+
+    function validAttendance() {
+      return hasOnlyKeys([
+        'capturedBy',
+        'capturedById',
+        'courseCode',
+        'createdAt',
+        'date',
+        'status',
+        'studentName',
+        'updatedAt'
+      ]) &&
+      request.resource.data.capturedById == request.auth.uid &&
+      request.resource.data.courseCode is string &&
+      request.resource.data.studentName is string &&
+      request.resource.data.status is string &&
+      request.resource.data.date is string &&
+      request.resource.data.capturedBy is string;
+    }
+
+    function validRating() {
+      return hasOnlyKeys([
+        'authorId',
+        'authorName',
+        'comment',
+        'createdAt',
+        'score',
+        'target',
+        'updatedAt'
+      ]) &&
+      request.resource.data.authorId == request.auth.uid &&
+      request.resource.data.authorName is string &&
+      request.resource.data.target is string &&
+      request.resource.data.comment is string &&
+      request.resource.data.score is int &&
+      request.resource.data.score >= 1 &&
+      request.resource.data.score <= 5;
+    }
+
+    function validMonitoring() {
+      return hasOnlyKeys([
+        'createdAt',
+        'note',
+        'owner',
+        'ownerId',
+        'title',
+        'updatedAt'
+      ]) &&
+      request.resource.data.ownerId == request.auth.uid &&
+      request.resource.data.owner is string &&
+      request.resource.data.title is string &&
+      request.resource.data.note is string;
+    }
+
+    match /users/{userId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == userId;
+      allow update: if signedIn() && (request.auth.uid == userId || isProgramLeader());
+      allow delete: if isProgramLeader();
+    }
+
+    match /courses/{courseId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && isProgramLeader() && validCourse();
+      allow delete: if signedIn() && isProgramLeader();
+    }
+
+    match /reports/{reportId} {
+      allow read: if signedIn();
+      allow create: if signedIn() && isLecturer() && validReport();
+      allow update: if signedIn() && (
+        (isLecturer() && resource.data.lecturerId == request.auth.uid && validReport()) ||
+        (isPrincipalLecturer() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedback', 'updatedAt']))
+      );
+      allow delete: if signedIn() && isLecturer() && resource.data.lecturerId == request.auth.uid;
+    }
+
+    match /attendance/{attendanceId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && isLecturer() && validAttendance();
+      allow delete: if signedIn() && isLecturer() && resource.data.capturedById == request.auth.uid;
+    }
+
+    match /ratings/{ratingId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && validRating();
+      allow delete: if signedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    match /monitoring/{monitoringId} {
+      allow read: if signedIn();
+      allow create, update: if signedIn() && validMonitoring();
+      allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+    }
+  }
+}

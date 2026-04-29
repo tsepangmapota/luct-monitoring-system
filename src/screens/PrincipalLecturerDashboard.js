@@ -22,10 +22,9 @@ export default function LecturerDashboard({ navigation }) {
   if (loading) return <View style={styles.center}><ActivityIndicator size="large" color="#2196F3" /></View>;
   return (
     <View style={styles.container}>
-      <View style={styles.header}><Text style={styles.welcome}>Welcome, {userData?.name || 'Lecturer'}!</Text>
+      <View style={styles.header}><Text style={styles.welcome}>{userData?.name || 'Principal Lecturer'}</Text>
       <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}><Text style={styles.logoutText}>Logout</Text></TouchableOpacity></View>
-      <View style={[styles.card, { backgroundColor: '#4CAF50' }]}><Text style={styles.cardTitle}>Lecturer Dashboard</Text>
-      <Text style={styles.cardText}>Role: {userData?.role}</Text><Text style={styles.cardText}>Email: {userData?.email}</Text></View>
+      <View style={[styles.card, { backgroundColor: '#4CAF50' }]}><Text style={styles.cardTitle}>Principal Lecturer Dashboard</Text></View>
     </View>
   );
 }

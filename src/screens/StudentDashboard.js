@@ -37,13 +37,11 @@ export default function StudentDashboard({ navigation }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.welcome}>Welcome, {userData?.name || 'Student'}!</Text>
+        <Text style={styles.welcome}>{userData?.name || 'Student'}</Text>
         <TouchableOpacity onPress={handleLogout} style={styles.logoutBtn}><Text style={styles.logoutText}>Logout</Text></TouchableOpacity>
       </View>
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Student Dashboard</Text>
-        <Text style={styles.cardText}>Role: {userData?.role}</Text>
-        <Text style={styles.cardText}>Email: {userData?.email}</Text>
       </View>
     </View>
   );
