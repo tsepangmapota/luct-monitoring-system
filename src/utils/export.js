@@ -18,21 +18,22 @@ const headers = [
   'PRL Feedback',
 ];
 
-function escapeCsv(value) {
-  const text = String(value ?? '');
-  if (text.includes('"') || text.includes(',') || text.includes('\n')) {
-    return `"${text.replace(/"/g, '""')}"`;
-  }
-  return text;
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
-export function exportReportsToCsv(reports) {
+export function exportReportsToExcel(reports) {
   if (!reports.length) {
     throw new Error('There are no reports to export.');
   }
 
   if (Platform.OS !== 'web' || typeof document === 'undefined') {
-    throw new Error('CSV export is available from the hosted web build so the file downloads directly.');
+    throw new Error('Excel export is available from the hosted web build so the file downloads directly.');
   }
 
   const rows = reports.map((item) => [
@@ -53,12 +54,40 @@ export function exportReportsToCsv(reports) {
     item.feedback,
   ]);
 
-  const csv = [headers, ...rows]
-    .map((row) => row.map(escapeCsv).join(','))
-    .join('\n');
+  const tableRows = [headers, ...rows]
+    .map((row, index) => (
+      `<tr>${row.map((value) => {
+        const tag = index === 0 ? 'th' : 'td';
+        return `<${tag}>${escapeHtml(value)}</${tag}>`;
+      }).join('')}</tr>`
+    ))
+    .join('');
 
-  const filename = `luct-reports-${new Date().toISOString().slice(0, 10)}.csv`;
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const workbook = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <head>
+        <meta charset="utf-8" />
+        <!--[if gte mso 9]>
+        <xml>
+          <x:ExcelWorkbook>
+            <x:ExcelWorksheets>
+              <x:ExcelWorksheet>
+                <x:Name>Reports</x:Name>
+                <x:WorksheetOptions><x:DisplayGridlines /></x:WorksheetOptions>
+              </x:ExcelWorksheet>
+            </x:ExcelWorksheets>
+          </x:ExcelWorkbook>
+        </xml>
+        <![endif]-->
+      </head>
+      <body>
+        <table>${tableRows}</table>
+      </body>
+    </html>
+  `.trim();
+
+  const filename = `luct-reports-${new Date().toISOString().slice(0, 10)}.xls`;
+  const blob = new Blob([workbook], { type: 'application/vnd.ms-excel;charset=utf-8;' });
   const url = window.URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;

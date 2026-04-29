@@ -65,7 +65,7 @@ import {
   updateRatingRecord,
   updateReportRecord,
 } from '../services/appDataService';
-import { exportReportsToCsv } from '../utils/export';
+import { exportReportsToExcel } from '../utils/export';
 import {
   validateLoginForm,
 } from '../utils/validation';
@@ -498,7 +498,7 @@ export default function MainApp() {
 
   const downloadReports = async () => {
     await handleAsyncAction('download-reports', async () => {
-      const filename = exportReportsToCsv(visibleReports);
+      const filename = exportReportsToExcel(visibleReports);
       showNotice('success', `${filename} downloaded successfully.`);
       return null;
     });
@@ -721,7 +721,7 @@ export default function MainApp() {
             title="Reports"
             rightAction={(
               <ActionButton
-                label={busyAction === 'download-reports' ? 'Preparing...' : 'Download CSV'}
+                label={busyAction === 'download-reports' ? 'Preparing...' : 'Download Excel'}
                 tone="secondary"
                 onPress={downloadReports}
                 disabled={busyAction === 'download-reports' || !visibleReports.length}
