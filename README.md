@@ -26,10 +26,20 @@ Password for all demo accounts: `123456`
 
 ```bash
 npm install
-npx expo start
+npm run start:phone
 ```
 
 Then scan the QR code with the Expo Go app on your phone.
+
+If the phone shows a red screen that mentions `localhost:8081`, the app is looking for Metro on the phone instead of on your computer. Make sure the computer and phone are on the same Wi-Fi, start Metro with `npm run start:phone`, and scan the new QR code. If the Wi-Fi blocks local devices from seeing each other, use `npm run start:tunnel` instead.
+
+If you installed a native development build with `npm run android`, start Metro with:
+
+```bash
+npm run start:dev-client
+```
+
+Then open the dev menu on the phone and set the debug server host to your computer's Wi-Fi IP with port `8081`, for example `192.2.42.106:8081`.
 
 ## Firebase setup
 

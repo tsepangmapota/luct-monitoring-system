@@ -111,25 +111,20 @@ async function loadLocalData() {
 }
 
 async function loadRemoteCollection(name) {
-  const snapshot = await getDocs(collection(db, name));
-  return snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort(sortByRecent);
-}
-
-async function seedRemoteDataIfEmpty() {
-  const coursesSnapshot = await getDocs(collection(db, 'courses'));
-  if (!coursesSnapshot.empty) return;
-
-  for (const name of collectionNames) {
-    for (const record of seed[name]) {
-      if (name === 'users') continue;
-      const { id, ...payload } = record;
-      await addDoc(collection(db, name), withTimestamps(payload, payload));
-    }
+  try {
+    const snapshot = await getDocs(collection(db, name));
+    return snapshot.docs.map((item) => ({ id: item.id, ...item.data() })).sort(sortByRecent);
+  } catch (error) {
+    console.warn(`Unable to load ${name} from Firestore.`, error);
+    return [];
   }
 }
 
+function hasRemoteSession() {
+  return isFirebaseConfigured && !!auth?.currentUser;
+}
+
 async function loadRemoteData() {
-  await seedRemoteDataIfEmpty();
   const [users, courses, reports, ratings, attendance, monitoring] = await Promise.all(
     collectionNames.map(loadRemoteCollection),
   );
@@ -137,7 +132,7 @@ async function loadRemoteData() {
 }
 
 export function subscribeToAppData(onData, onError) {
-  if (!isFirebaseConfigured) return () => {};
+  if (!hasRemoteSession()) return () => {};
 
   const current = createEmptyData();
   const unsubscribers = collectionNames.map((name) => onSnapshot(
@@ -153,13 +148,20 @@ export function subscribeToAppData(onData, onError) {
 }
 
 async function getRemoteProfile(uid) {
-  const snapshot = await getDoc(doc(db, 'users', uid));
-  if (!snapshot.exists()) return null;
-  return { id: snapshot.id, ...snapshot.data() };
+  try {
+    const snapshot = await getDoc(doc(db, 'users', uid));
+    if (!snapshot.exists()) return null;
+    return { id: snapshot.id, ...snapshot.data() };
+  } catch (error) {
+    console.warn('Unable to load user profile from Firestore.', error);
+    return null;
+  }
 }
 
 export async function loadAppData() {
-  return isFirebaseConfigured ? loadRemoteData() : loadLocalData();
+  if (!isFirebaseConfigured) return loadLocalData();
+  if (!hasRemoteSession()) return prepareDataSnapshot(seed);
+  return loadRemoteData();
 }
 
 export async function getCurrentUserProfile() {
@@ -188,7 +190,12 @@ export async function loginUser(email, password) {
     role: 'student',
   });
 
-  await setDoc(doc(db, 'users', result.user.uid), fallbackProfile);
+  try {
+    await setDoc(doc(db, 'users', result.user.uid), fallbackProfile);
+  } catch (error) {
+    console.warn('Unable to create fallback user profile in Firestore.', error);
+  }
+
   return { id: result.user.uid, ...fallbackProfile };
 }
 
@@ -220,7 +227,19 @@ export async function registerUser(form) {
     email: normalizedEmail,
     role: form.role,
   });
-  await setDoc(doc(db, 'users', result.user.uid), profile);
+
+  try {
+    await setDoc(doc(db, 'users', result.user.uid), profile);
+  } catch (error) {
+    console.warn('Unable to create user profile in Firestore.', error);
+    await signOut(auth);
+    return {
+      id: result.user.uid,
+      ...profile,
+      profileWriteFailed: true,
+    };
+  }
+
   await signOut(auth);
   return { id: result.user.uid, ...profile };
 }

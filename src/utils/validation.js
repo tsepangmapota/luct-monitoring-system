@@ -124,6 +124,8 @@ export function sanitizeAttendanceRecord(payload) {
 
 export function sanitizeRatingRecord(payload) {
   return {
+    authorId: normalizeText(payload.authorId),
+    authorName: normalizeText(payload.authorName),
     target: normalizeText(payload.target),
     score: Number(payload.score) || 0,
     comment: normalizeText(payload.comment),

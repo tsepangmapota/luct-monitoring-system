@@ -9,8 +9,12 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
+    function userDocPath() {
+      return /databases/$(database)/documents/users/$(request.auth.uid);
+    }
+
     function userRole() {
-      return signedIn() && userDoc().exists() ? userDoc().data.role : null;
+      return signedIn() && exists(userDocPath()) ? userDoc().data.role : null;
     }
 
     function isProgramLeader() {

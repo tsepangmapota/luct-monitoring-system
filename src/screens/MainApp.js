@@ -72,6 +72,27 @@ import {
 
 const initialNotice = { tone: 'info', text: '' };
 
+function prepareAccessibleSeed(profile) {
+  const hasProfile = seed.users.some((item) => item.id === profile.id || item.email === profile.email);
+  if (hasProfile) return seed;
+
+  const now = new Date().toISOString();
+  return {
+    ...seed,
+    users: [
+      {
+        id: profile.id,
+        name: profile.name,
+        email: profile.email,
+        role: profile.role,
+        createdAt: profile.createdAt || now,
+        updatedAt: profile.updatedAt || now,
+      },
+      ...seed.users,
+    ],
+  };
+}
+
 export default function MainApp() {
   const { width } = useWindowDimensions();
   const compact = width < 720;
@@ -121,7 +142,7 @@ export default function MainApp() {
             },
             (error) => {
               if (!mounted) return;
-              setNotice({ tone: 'error', text: error.message || 'Live updates stopped unexpectedly.' });
+              console.warn('Live Firestore updates are unavailable.', error);
             },
           );
         }
@@ -264,24 +285,36 @@ export default function MainApp() {
     await handleAsyncAction('login', async () => {
       validateLoginForm(loginForm);
       const profile = await loginUser(loginForm.email, loginForm.password);
-      const freshData = await loadAppData();
       setUser(profile);
-      setData(freshData);
       setLoginForm({ email: '', password: '' });
       setSearch('');
+
+      try {
+        const freshData = await loadAppData();
+        setData(freshData);
+      } catch (error) {
+        console.warn('Unable to refresh application data after login.', error);
+        setData(prepareAccessibleSeed(profile));
+      }
+
       return null;
     }, 'Login successful.');
   };
 
   const handleRegister = async () => {
     await handleAsyncAction('register', async () => {
-      await registerUser(registerForm);
+      const createdUser = await registerUser(registerForm);
       const freshData = await loadAppData();
       setData(freshData);
       setRegisterForm({ name: '', email: '', password: '', role: 'student' });
       setScreen('login');
+      if (createdUser.profileWriteFailed) {
+        showNotice('error', 'Account created, but Firebase blocked the profile record. Deploy Firestore rules before using this account fully.');
+        return null;
+      }
+      showNotice('success', 'Account created successfully. You can now log in.');
       return null;
-    }, 'Account created successfully. You can now log in.');
+    });
   };
 
   const handleLogout = async () => {
